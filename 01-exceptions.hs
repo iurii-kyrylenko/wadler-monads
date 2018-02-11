@@ -32,12 +32,16 @@ instance Applicative M where
   pure = return
   (<*>) = ap
 
-eval' :: Term -> M Int
-eval' (Con a) = return a
-eval' (Div t u) = eval' t >>= \a -> eval' u >>= \b -> unit a b
-                  where unit a b = if b == 0
-                                    then Raise "divide by zero"
-                                    else return (a `div` b)
+evalM :: Term -> M Int
+evalM (Con a) = return a
+-- evalM (Div t u) = evalM t >>= \a -> evalM u >>= \b -> unit a b
+--                   where unit a b = if b == 0
+--                                     then Raise "divide by zero"
+--                                     else return (a `div` b)
+evalM (Div t u) = do a <- evalM t
+                     b <- evalM u
+                     if b == 0 then Raise "divide by zero"
+                               else return (a `div` b)
 
-t1' = eval' answer
-t2' = eval' err
+t3 = evalM answer
+t4 = evalM err
