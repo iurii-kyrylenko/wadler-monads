@@ -1,0 +1,1 @@
+Following "Monads for functional programming" by Philip Wadler
