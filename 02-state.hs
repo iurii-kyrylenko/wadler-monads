@@ -14,7 +14,7 @@ t1 = eval answer
 
 ----------------
 
-data M a = S (State -> (a, State))
+newtype M a = S (State -> (a, State))
 type State = Int
 
 instance Monad M where
