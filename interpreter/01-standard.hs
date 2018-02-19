@@ -20,6 +20,7 @@ interp (Con c) _   = return (Num c)
 interp (Add t u) e = do x <- interp t e
                         y <- interp u e
                         add x y
+interp (Lam x t) e = return $ Fun $ \a -> interp t ((x, a):e)
 
 lookup' :: Name -> Environment -> M Value
 lookup' _ []         = return Wrong
