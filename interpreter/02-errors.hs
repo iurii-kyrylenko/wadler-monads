@@ -10,11 +10,11 @@ data Term = Var Name
 
 data Value = Wrong
            | Num Int
-           | Fun (Value -> M Value)
+           | Fun (Value -> E Value)
 
 type Environment = [(Name, Value)]
 
-interp :: Term -> Environment -> M Value
+interp :: Term -> Environment -> E Value
 interp (Var x) e   = lookup' x e
 interp (Con c) _   = return (Num c)
 interp (Add t u) e = do x <- interp t e
@@ -25,20 +25,20 @@ interp (App t u) e = do f <- interp t e
                         x <- interp u e
                         apply f x
 
-lookup' :: Name -> Environment -> M Value
-lookup' _ []         = return Wrong
+lookup' :: Name -> Environment -> E Value
+lookup' x []         = error' $ "unboun variable:" ++ x
 lookup' x ((n, v):e) = if x == n then return v
                                  else lookup' x e
 
-add :: Value -> Value -> M Value
+add :: Value -> Value -> E Value
 add (Num x) (Num y) = return $ Num (x + y)
-add _ _ = return Wrong
+add x y = error' $ "not a number:" ++ showVal x ++ "," ++ showVal y
 
-apply :: Value -> Value -> M Value
+apply :: Value -> Value -> E Value
 apply (Fun f) a = f a
-apply _ _ = return Wrong
+apply x _ = error' $ "not a function: " ++ showVal x
 
-test :: Term -> M Value
+test :: Term -> E Value
 test t = interp t []
 
 showVal :: Value -> String
@@ -48,23 +48,33 @@ showVal (Fun f) = "<function>"
 
 -------------
 
-newtype M a = I a
+data E a = Success a | Error String
 
-instance Monad M where
-  return a = I a
-  (I a) >>= k  = k a
+instance Monad E where
+  return a = Success a
+  (Success a) >>= k = k a
+  (Error s)   >>= _ = Error s
 
-instance Functor M where
+instance Functor E where
   fmap = liftM
 
-instance Applicative M where
+instance Applicative E where
   pure = return
   (<*>) = ap
 
-showM :: M Value -> String
-showM (I a) = showVal a
+showE :: E Value -> String
+showE (Success a) = "Success: " ++ showVal a
+showE (Error s)   = "Error: " ++ show s
+
+error' :: String -> E a
+error' s = Error s
+
+showTest :: Term -> IO ()
+showTest = putStrLn . showE . test
 
 -------------
 
-term0 = App (Lam "x" (Add (Var "x") (Var "x")))(Add (Con 10) (Con 11))
-t1 = showM $ test term0
+term1 = App (Lam "x" (Add (Var "x") (Var "x")))(Add (Con 10) (Con 11))
+term2 = App (Con 1) (Con 2)
+t1 = showTest term1
+t2 = showTest term2
